@@ -1,0 +1,248 @@
+<svg viewBox="0 0 512 512" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Rich depth shadows for hand-molded clay elements -->
+    <filter id="border-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#140601" flood-opacity="0.35" />
+    </filter>
+    <filter id="clay-shadow-deep" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#1A2D1F" flood-opacity="0.3" />
+    </filter>
+    <filter id="clay-shadow-soft" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#102013" flood-opacity="0.22" />
+    </filter>
+    <filter id="pin-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#0E1A11" flood-opacity="0.35" />
+    </filter>
+    <filter id="house-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#102515" flood-opacity="0.25" />
+    </filter>
+
+    <!-- Clay Color Gradients -->
+    <!-- Braided Rope Border: warm rich terracotta -->
+    <linearGradient id="clay-rope-light" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D79E7B" />
+      <stop offset="50%" stop-color="#BF825D" />
+      <stop offset="100%" stop-color="#9C5C39" />
+    </linearGradient>
+    <linearGradient id="clay-rope-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A56541" />
+      <stop offset="100%" stop-color="#703C1F" />
+    </linearGradient>
+
+    <!-- Sky Backing: soft blue clay slab -->
+    <linearGradient id="clay-sky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#79BEDE" />
+      <stop offset="100%" stop-color="#4B9BC3" />
+    </linearGradient>
+
+    <!-- Green Hills -->
+    <linearGradient id="clay-hill-deep" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3FA65B" />
+      <stop offset="100%" stop-color="#247038" />
+    </linearGradient>
+    <linearGradient id="clay-hill-mid" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5CBD4E" />
+      <stop offset="100%" stop-color="#348C28" />
+    </linearGradient>
+    <linearGradient id="clay-hill-light" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#80D15C" />
+      <stop offset="100%" stop-color="#55A134" />
+    </linearGradient>
+
+    <!-- River: deep cerulean blue clay -->
+    <linearGradient id="clay-river" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4FA6E5" />
+      <stop offset="50%" stop-color="#1D72C4" />
+      <stop offset="100%" stop-color="#0E4E91" />
+    </linearGradient>
+
+    <!-- Red Pin -->
+    <radialGradient id="clay-pin-red" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FF635C" />
+      <stop offset="40%" stop-color="#DD2E2E" />
+      <stop offset="100%" stop-color="#8A0E0E" />
+    </radialGradient>
+
+    <!-- Houses -->
+    <linearGradient id="clay-red" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E85D44" />
+      <stop offset="100%" stop-color="#BD2C15" />
+    </linearGradient>
+    <linearGradient id="clay-yellow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FCD53F" />
+      <stop offset="100%" stop-color="#D1A30A" />
+    </linearGradient>
+    <linearGradient id="clay-orange" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAA326" />
+      <stop offset="100%" stop-color="#CC7406" />
+    </linearGradient>
+    <linearGradient id="clay-brown" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#A06B4C" />
+      <stop offset="100%" stop-color="#6F4125" />
+    </linearGradient>
+
+    <!-- Path / Road -->
+    <linearGradient id="clay-road" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EFE2CD" />
+      <stop offset="100%" stop-color="#D7C3A7" />
+    </linearGradient>
+  </defs>
+
+  <!-- ==================== BACKGROUND & BORDER ==================== -->
+  <!-- Dark under-shadow for the entire clay medallion -->
+  <circle cx="256" cy="256" r="240" fill="#4A2511" filter="url(#border-shadow)" />
+
+  <!-- Outer Braided Rope Rim: Simulated with twisted overlapping circles for hand-sculpted look -->
+  <g id="rope-border">
+    <!-- Base ring -->
+    <circle cx="256" cy="256" r="236" fill="url(#clay-rope-dark)" />
+    <!-- Overlapping twisted clay rope coils -->
+    <circle cx="256" cy="256" r="226" fill="url(#clay-rope-light)" stroke="#8F4F28" stroke-width="4" />
+
+    <!-- Tactile braided texture slices -->
+    <!-- Top and diagonal notches -->
+    <path d="M 256,16 L 256,36 M 295,21 L 285,38 M 332,35 L 318,49 M 366,57 L 348,68 M 394,87 L 373,96 M 415,123 L 391,129 M 429,164 L 403,167 M 435,208 L 408,208 M 433,251 L 406,248 M 423,294 L 397,288 M 405,336 L 381,327 M 380,375 L 358,363 M 348,408 L 329,394 M 310,434 L 294,417 M 268,451 L 257,432 M 225,451 L 221,432 M 183,441 L 186,422 M 145,422 L 152,404 M 111,394 L 122,378 M 82,359 L 96,344 M 61,318 L 78,306 M 48,274 L 68,266 M 43,228 L 64,224 M 47,181 L 68,181 M 59,136 L 79,141 M 79,96 L 96,104 M 106,64 L 121,75 M 141,40 L 153,54 M 181,24 L 188,41 M 220,17 L 222,36"
+          fill="none" stroke="#703C1F" stroke-width="10" stroke-linecap="round" opacity="0.85" />
+    <path d="M 256,16 L 256,36 M 295,21 L 285,38 M 332,35 L 318,49 M 366,57 L 348,68 M 394,87 L 373,96 M 415,123 L 391,129 M 429,164 L 403,167 M 435,208 L 408,208 M 433,251 L 406,248 M 423,294 L 397,288 M 405,336 L 381,327 M 380,375 L 358,363 M 348,408 L 329,394 M 310,434 L 294,417 M 268,451 L 257,432 M 225,451 L 221,432 M 183,441 L 186,422 M 145,422 L 152,404 M 111,394 L 122,378 M 82,359 L 96,344 M 61,318 L 78,306 M 48,274 L 68,266 M 43,228 L 64,224 M 47,181 L 68,181 M 59,136 L 79,141 M 79,96 L 96,104 M 106,64 L 121,75 M 141,40 L 153,54 M 181,24 L 188,41 M 220,17 L 222,36"
+          fill="none" stroke="#FFE9DC" stroke-width="4" stroke-linecap="round" opacity="0.35" transform="translate(-2, -1)" />
+  </g>
+
+  <!-- Sky Basin (Inner map backdrop) -->
+  <circle cx="256" cy="256" r="212" fill="url(#clay-sky)" />
+
+  <!-- ==================== LANDSCAPE HILLS (Layers of Green Clay) ==================== -->
+  <g id="hills">
+    <!-- Hill 1 (Deep Emerald Green, Far Left & Back) -->
+    <path d="M 50,220 C 100,180 160,190 220,230 C 270,260 280,320 280,370 C 280,420 230,460 170,460 C 110,460 50,400 46,310 Z"
+          fill="url(#clay-hill-deep)" filter="url(#clay-shadow-soft)" />
+
+    <!-- Hill 2 (Mid Green, Back Right & Top) -->
+    <path d="M 230,220 C 280,170 360,150 420,180 C 460,200 466,280 440,340 C 410,380 340,360 300,320 C 260,280 210,240 230,220 Z"
+          fill="url(#clay-hill-mid)" filter="url(#clay-shadow-soft)" />
+
+    <!-- Center Meadow: Main hand-flattened green platform -->
+    <path d="M 120,380 C 120,280 180,240 260,240 C 340,240 370,290 370,350 C 370,410 320,430 250,430 C 180,430 120,430 120,380 Z"
+          fill="#48A34F" filter="url(#clay-shadow-deep)" />
+    <!-- Lighter hand pressed circle highlight on center meadow -->
+    <path d="M 140,370 C 140,290 190,260 255,260 C 320,260 345,300 345,350 C 345,400 300,415 250,415 C 190,415 140,410 140,370 Z"
+          fill="url(#clay-hill-light)" opacity="0.95" />
+  </g>
+
+  <!-- ==================== BLUE CLAY RIVER (Winding Ribbon on Bottom Right) ==================== -->
+  <g id="river" filter="url(#clay-shadow-deep)">
+    <!-- Base dark blue clay ribbon -->
+    <path d="M 440,268 C 430,270 395,310 375,340 C 350,380 290,400 270,430 C 255,455 235,470 240,480 C 245,490 280,488 305,475 C 330,460 380,420 415,365 C 440,325 455,290 448,272"
+          fill="none" stroke="#134780" stroke-width="48" stroke-linecap="round" />
+    <!-- Bright blue main clay ribbon -->
+    <path d="M 440,268 C 430,270 395,310 375,340 C 350,380 290,400 270,430 C 255,455 235,470 240,480 C 245,490 280,488 305,475 C 330,460 380,420 415,365 C 440,325 455,290 448,272"
+          fill="none" stroke="url(#clay-river)" stroke-width="36" stroke-linecap="round" />
+    <!-- Sculpted stream indentation / light blue strand -->
+    <path d="M 436,270 C 426,272 393,311 373,341 C 348,381 289,399 269,429 C 256,451 242,467 244,474 C 246,479 266,478 285,471 C 310,459 366,423 399,372 C 426,331 445,296 441,280"
+          fill="none" stroke="#87CDFC" stroke-width="8" stroke-linecap="round" opacity="0.6" />
+  </g>
+
+  <!-- ==================== CLAY PATHS & ROADS (Beige Grooves) ==================== -->
+  <g id="paths" filter="url(#clay-shadow-soft)">
+    <!-- Main winding clay path line -->
+    <path d="M 125,410 C 160,380 190,340 250,340 C 310,340 330,300 370,290 M 235,340 C 200,310 180,290 150,285"
+          fill="none" stroke="url(#clay-road)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M 125,410 C 160,380 190,340 250,340 C 310,340 330,300 370,290 M 235,340 C 200,310 180,290 150,285"
+          fill="none" stroke="#FFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.3" transform="translate(-1, -1)" />
+  </g>
+
+  <!-- ==================== LOLLIPOP CLAY TREES ==================== -->
+  <g id="trees" filter="url(#clay-shadow-soft)">
+    <!-- Tree 1 (Left Hill) -->
+    <g transform="translate(145, 310)">
+      <rect x="-4" y="0" width="8" height="22" rx="3" fill="url(#clay-brown)" />
+      <circle cx="0" cy="-6" r="16" fill="#3D8E42" stroke="#256228" stroke-width="2" />
+      <circle cx="-4" cy="-10" r="10" fill="#5EAF63" opacity="0.8" />
+    </g>
+    <!-- Tree 2 (Center Meadow) -->
+    <g transform="translate(215, 345)">
+      <rect x="-3" y="0" width="6" height="18" rx="2" fill="url(#clay-brown)" />
+      <circle cx="0" cy="-4" r="14" fill="#429A46" stroke="#28692B" stroke-width="2" />
+      <circle cx="-3" cy="-7" r="9" fill="#66BD6B" opacity="0.8" />
+    </g>
+    <!-- Tree 3 (Right Meadow) -->
+    <g transform="translate(300, 315)">
+      <rect x="-3" y="0" width="6" height="18" rx="2" fill="url(#clay-brown)" />
+      <circle cx="0" cy="-4" r="13" fill="#3D8E42" stroke="#256228" stroke-width="2" />
+      <circle cx="-3" cy="-7" r="8" fill="#5EAF63" opacity="0.8" />
+    </g>
+  </g>
+
+  <!-- ==================== HAND-MOLDED CLAY BUILDINGS ==================== -->
+  <g id="buildings" filter="url(#house-shadow)">
+    <!-- Little yellow house on left -->
+    <g transform="translate(165, 275) scale(0.95)">
+      <!-- Yellow clay base -->
+      <path d="M -16,12 L 16,12 L 16,-12 L -16,-12 Z" fill="url(#clay-yellow)" />
+      <!-- Red slanted clay roof -->
+      <path d="M -20,-11 L 0,-24 L 20,-11 Z" fill="url(#clay-red)" stroke="#9A1501" stroke-width="1.5" />
+      <!-- Dark door -->
+      <rect x="-5" y="1" width="10" height="11" rx="2.5" fill="#5C250A" />
+      <!-- Small window -->
+      <rect x="-10" y="-7" width="6" height="6" rx="1.5" fill="#72C6EC" />
+      <rect x="4" y="-7" width="6" height="6" rx="1.5" fill="#72C6EC" />
+    </g>
+
+    <!-- Tall Red Building (Center-left) -->
+    <g transform="translate(205, 235)">
+      <!-- Red tall clay body -->
+      <path d="M -16,24 Q 18,24 16,24 L 16,-24 L -16,-24 Z" fill="url(#clay-red)" />
+      <!-- Roof -->
+      <path d="M -18,-23 Q 0,-34 18,-27 L 14,-22 Z" fill="#901402" />
+      <!-- Yellow windows -->
+      <rect x="-10" y="-16" width="7" height="9" rx="1.5" fill="#FFEB60" />
+      <rect x="3" y="-16" width="7" height="9" rx="1.5" fill="#FFEB60" />
+      <rect x="-10" y="-3" width="7" height="9" rx="1.5" fill="#FFEB60" />
+      <rect x="3" y="-3" width="7" height="9" rx="1.5" fill="#FFEB60" />
+      <!-- Door -->
+      <rect x="-5" y="11" width="10" height="13" rx="2" fill="#FFEAA0" />
+    </g>
+
+    <!-- Yellow arched building (Center) -->
+    <g transform="translate(240, 222) scale(0.9)">
+      <!-- Yellow arched clay body -->
+      <path d="M -15,22 L 15,22 L 15,-10 C 15,-22 -15,-22 -15,-10 Z" fill="url(#clay-yellow)" />
+      <!-- Windows -->
+      <rect x="-8" y="-8" width="6" height="8" rx="1" fill="#4A8DC2" />
+      <rect x="2" y="-8" width="6" height="8" rx="1" fill="#4A8DC2" />
+      <rect x="-8" y="4" width="6" height="8" rx="1" fill="#4A8DC2" />
+      <rect x="2" y="4" width="6" height="8" rx="1" fill="#4A8DC2" />
+    </g>
+
+    <!-- Little orange house on right -->
+    <g transform="translate(272, 224) scale(0.85)">
+      <path d="M -15,12 L 15,12 L 15,-12 L -15,-12 Z" fill="url(#clay-orange)" />
+      <path d="M -18,-11 L 0,-24 L 18,-11 Z" fill="url(#clay-brown)" />
+      <rect x="-4" y="2" width="8" height="10" rx="1.5" fill="#52230D" />
+    </g>
+  </g>
+
+  <!-- ==================== THE RED CLAY PIN WITH WHITE "C" ==================== -->
+  <g transform="translate(256, 305)" filter="url(#pin-shadow)">
+    <!-- Base shadow/depth of the pin -->
+    <path d="M 0,0 C -22,-22 -28,-44 -28,-58 C -28,-76 -13,-90 2,-90 C 17,-90 32,-76 32,-58 C 32,-44 22,-22 0,0 Z" fill="#600404" />
+
+    <!-- Red Pin main body -->
+    <path d="M -2,-2 C -22,-22 -26,-44 -26,-58 C -26,-74 -12,-88 2,-88 C 16,-88 30,-74 30,-58 C 30,-44 22,-22 -2,-2 Z" fill="url(#clay-pin-red)" />
+
+    <!-- White clay "C" letter, physical, drop-shadowed -->
+    <g filter="url(#clay-shadow-soft)">
+      <!-- Smooth circular curve of "C" molded from white clay -->
+      <path d="M 12,-48 C 10,-55 3,-58 -4,-58 C -13,-58 -18,-50 -18,-41 C -18,-31 -11,-24 -3,-24 C 4,-24 10,-28 12,-34"
+            fill="none" stroke="#FDFDFC" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round" />
+      <!-- Bevel sheen on white clay -->
+      <path d="M 11,-48 C 9,-54 3,-56 -3,-56 C -11,-56 -16,-49 -16,-41 C -16,-32 -10,-26 -3,-26 C 3,-26 9,-29 11,-34"
+            fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.9" />
+    </g>
+
+    <!-- Glossy Highlight on top edge of the pin -->
+    <path d="M -18,-72 C -12,-82 2,-84 14,-80" fill="none" stroke="#FFF" stroke-width="4.5" stroke-linecap="round" opacity="0.3" filter="blur(1px)" />
+  </g>
+
+  <!-- Physical highlights and hand-pinched details around the whole medallion rim -->
+  <circle cx="256" cy="256" r="224" fill="none" stroke="#FFF" stroke-width="3" stroke-linecap="round" opacity="0.1" />
+</svg>
