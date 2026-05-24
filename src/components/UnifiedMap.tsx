@@ -41,15 +41,16 @@ function cleanUrlForMapLibre(url: string): string {
 // Configure MapLibre GL to support Right-to-Left (RTL) text rendering (e.g. Hebrew, Arabic)
 if (
   typeof window !== "undefined" &&
-  (maplibregl as any).getRTLTextPluginStatus() === "unavailable"
+  maplibregl.getRTLTextPluginStatus() === "unavailable"
 ) {
-  ;(maplibregl as any).setRTLTextPlugin(
-    "https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.js",
-    (error: any) => {
-      if (error) console.error("Error loading MapLibre RTL text plugin:", error)
-    },
-    true // Lazy load the plugin only when RTL text is encountered
-  )
+  maplibregl
+    .setRTLTextPlugin(
+      "https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.js",
+      true // Lazy load the plugin only when RTL text is encountered
+    )
+    .catch((error) => {
+      console.error("Error loading MapLibre RTL text plugin:", error)
+    })
 }
 
 // Get marker category details (color, symbol)
