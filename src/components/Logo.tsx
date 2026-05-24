@@ -19,7 +19,7 @@ export function Logo({
           src={`${import.meta.env.BASE_URL}logo.png`}
           style={{ width: iconSize, height: iconSize }}
           className="shrink-0 object-contain drop-shadow"
-          alt="Clayground Logo"
+          alt="Cardo Logo"
         />
       ) : (
         <svg
@@ -280,10 +280,10 @@ export function Logo({
       {showText && (
         <div className="flex flex-col leading-none">
           <span className="font-sans text-2xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-50">
-            Clayground
+            Cardo
           </span>
           <span className="mt-1 font-sans text-[9px] font-bold tracking-[0.16em] text-neutral-500 uppercase dark:text-neutral-400">
-            MAPPING PLAYGROUND
+            JERUSALEM MAPPING PLAYGROUND
           </span>
         </div>
       )}
