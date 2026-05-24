@@ -381,6 +381,15 @@ export function generateMapLibreCode(
   <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
 
   <script>
+    // Configure MapLibre GL to support Right-to-Left (RTL) text rendering (e.g. Hebrew, Arabic)
+    if (maplibregl.getRTLTextPluginStatus() === 'unavailable') {
+      maplibregl.setRTLTextPlugin(
+        'https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.js',
+        null,
+        true // Lazy load the plugin only when RTL text is encountered
+      );
+    }
+
     // Initialize Map
     const map = new maplibregl.Map({
       container: 'map',
