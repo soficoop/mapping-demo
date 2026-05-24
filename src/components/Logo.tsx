@@ -16,7 +16,7 @@ export function Logo({
       {/* Hand-molded Clay Map Icon */}
       {usePng ? (
         <img
-          src="/logo.png"
+          src={`${import.meta.env.BASE_URL}logo.png`}
           style={{ width: iconSize, height: iconSize }}
           className="shrink-0 object-contain drop-shadow"
           alt="Clayground Logo"

@@ -72,6 +72,7 @@ export function UnifiedMap({
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
   const currentLibraryRef = useRef<string>("")
+  const currentBasemapRef = useRef<string>("")
 
   // Keep track of Leaflet layers to clear/redraw
   const lfLayersRef = useRef<{
@@ -148,6 +149,7 @@ export function UnifiedMap({
     }
 
     currentLibraryRef.current = library
+    currentBasemapRef.current = ""
 
     if (library === "leaflet") {
       // Create Leaflet Map
@@ -218,6 +220,7 @@ export function UnifiedMap({
       })
 
       mapRef.current = map
+      currentBasemapRef.current = activeBasemap
     }
 
     return () => {
@@ -303,6 +306,12 @@ export function UnifiedMap({
       const map = mapRef.current as maplibregl.Map
 
       const updateMapLibreBasemap = () => {
+        if (currentBasemapRef.current === activeBasemap) {
+          // Basemap didn't change, no need to setStyle again!
+          return
+        }
+        currentBasemapRef.current = activeBasemap
+
         if (selectedBasemap.isVector) {
           if (selectedBasemap.styleUrl) {
             map.setStyle(selectedBasemap.styleUrl)
@@ -530,6 +539,12 @@ export function UnifiedMap({
           if (map.getSource(id)) map.removeSource(id)
         }
 
+        // Remove previous overlays
+        OVERLAYS.forEach((over) => {
+          safeRemoveLayer(`overlay-layer-${over.id}`)
+          safeRemoveSource(`overlay-source-${over.id}`)
+        })
+
         // Layers removal list
         safeRemoveLayer("areas-fill")
         safeRemoveLayer("areas-outline")
@@ -542,6 +557,31 @@ export function UnifiedMap({
         safeRemoveLayer("native-cluster-count")
         safeRemoveLayer("unclustered-point")
         safeRemoveSource("pois-source")
+
+        // 0. Add Active Overlays (so they render below custom features)
+        activeOverlays.forEach((id) => {
+          const over = OVERLAYS.find((o) => o.id === id)
+          if (over) {
+            const sourceId = `overlay-source-${over.id}`
+            const layerId = `overlay-layer-${over.id}`
+
+            map.addSource(sourceId, {
+              type: "raster",
+              tiles: [cleanUrlForMapLibre(over.url)],
+              tileSize: 256,
+              attribution: over.attribution,
+            })
+
+            map.addLayer({
+              id: layerId,
+              type: "raster",
+              source: sourceId,
+              paint: {
+                "raster-opacity": 0.65,
+              },
+            })
+          }
+        })
 
         // 1. Add Areas (Polygons)
         const areaFeatures = areas.map((area) => ({
@@ -935,7 +975,7 @@ export function UnifiedMap({
         map.once("idle", renderMapLibreFeatures)
       }
     }
-  }, [pois, routes, areas, clusterMode, library])
+  }, [pois, routes, areas, clusterMode, library, activeBasemap, activeOverlays])
 
   // 4. Render active/temporary Drawing Coordinates (Polyline/Polygon preview)
   useEffect(() => {
