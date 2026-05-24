@@ -70,17 +70,23 @@ export function App() {
 
   const [basemapFilters, setBasemapFilters] = useState<BasemapFilters>(() => {
     const saved = localStorage.getItem("mapping_demo_basemap_filters")
-    return saved
-      ? JSON.parse(saved)
-      : {
-          grayscale: 0,
-          invert: 0,
-          hueRotate: 0,
-          brightness: 100,
-          contrast: 100,
-          saturation: 100,
-          sepia: 0,
-        }
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      if (parsed.opacity === undefined) {
+        parsed.opacity = 100
+      }
+      return parsed
+    }
+    return {
+      grayscale: 0,
+      invert: 0,
+      hueRotate: 0,
+      brightness: 100,
+      contrast: 100,
+      saturation: 100,
+      sepia: 0,
+      opacity: 100,
+    }
   })
 
   // Form States for Custom Basemap creation
@@ -254,6 +260,7 @@ export function App() {
           contrast: 100,
           saturation: 100,
           sepia: 0,
+          opacity: 100,
           enabled: false,
         },
       }
@@ -310,6 +317,7 @@ export function App() {
         contrast: 100,
         saturation: 100,
         sepia: 0,
+        opacity: 100,
       })
     }
   }
@@ -812,7 +820,9 @@ export function App() {
                       basemapFilters.brightness !== 100 ||
                       basemapFilters.contrast !== 100 ||
                       basemapFilters.saturation !== 100 ||
-                      basemapFilters.sepia > 0) && (
+                      basemapFilters.sepia > 0 ||
+                      (basemapFilters.opacity !== undefined &&
+                        basemapFilters.opacity !== 100)) && (
                       <button
                         onClick={() =>
                           setBasemapFilters({
@@ -823,6 +833,7 @@ export function App() {
                             contrast: 100,
                             saturation: 100,
                             sepia: 0,
+                            opacity: 100,
                           })
                         }
                         className="flex cursor-pointer items-center gap-0.5 text-[10px] font-bold text-rose-500 hover:underline"
@@ -1007,6 +1018,31 @@ export function App() {
                           setBasemapFilters((prev) => ({
                             ...prev,
                             sepia: parseInt(e.target.value),
+                          }))
+                        }
+                        className="h-1.5 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-800"
+                      />
+                    </div>
+
+                    {/* Opacity */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-slate-600 dark:text-slate-400">
+                          Opacity / Fade
+                        </span>
+                        <span className="font-mono text-slate-500">
+                          {basemapFilters.opacity ?? 100}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={basemapFilters.opacity ?? 100}
+                        onChange={(e) =>
+                          setBasemapFilters((prev) => ({
+                            ...prev,
+                            opacity: parseInt(e.target.value),
                           }))
                         }
                         className="h-1.5 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-800"
@@ -1852,6 +1888,8 @@ export function App() {
                                                 saturation:
                                                   a.filters?.saturation ?? 100,
                                                 sepia: a.filters?.sepia ?? 0,
+                                                opacity:
+                                                  a.filters?.opacity ?? 100,
                                                 enabled: val,
                                               },
                                             }
@@ -2078,6 +2116,39 @@ export function App() {
                                                   filters: {
                                                     ...a.filters,
                                                     sepia: val,
+                                                  },
+                                                }
+                                              : a
+                                          )
+                                        )
+                                      }}
+                                      className="h-1 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-700"
+                                    />
+                                  </div>
+
+                                  {/* Opacity */}
+                                  <div className="space-y-0.5">
+                                    <div className="flex justify-between text-[9px] font-semibold text-slate-500">
+                                      <span>Opacity / Fade</span>
+                                      <span>
+                                        {area.filters.opacity ?? 100}%
+                                      </span>
+                                    </div>
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="100"
+                                      value={area.filters.opacity ?? 100}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value)
+                                        setAreas((prev) =>
+                                          prev.map((a) =>
+                                            a.id === area.id && a.filters
+                                              ? {
+                                                  ...a,
+                                                  filters: {
+                                                    ...a.filters,
+                                                    opacity: val,
                                                   },
                                                 }
                                               : a

@@ -482,6 +482,7 @@ export function UnifiedMap({
                 contrast(${area.filters.contrast}%)
                 saturate(${area.filters.saturation}%)
                 sepia(${area.filters.sepia}%)
+                opacity(${area.filters.opacity ?? 100}%)
               `
             }
             // Keep the tile layer URL in sync!
@@ -531,6 +532,7 @@ export function UnifiedMap({
                   contrast(${area.filters.contrast}%)
                   saturate(${area.filters.saturation}%)
                   sepia(${area.filters.sepia}%)
+                  opacity(${area.filters.opacity ?? 100}%)
                 `
               }
 
@@ -1417,7 +1419,8 @@ export function UnifiedMap({
                     brightness(${basemapFilters.brightness}%)
                     contrast(${basemapFilters.contrast}%)
                     saturate(${basemapFilters.saturation}%)
-                    sepia(${basemapFilters.sepia}%);
+                    sepia(${basemapFilters.sepia}%)
+                    opacity(${basemapFilters.opacity ?? 100}%);
           }
           .maplibregl-canvas {
             filter: grayscale(${basemapFilters.grayscale}%)
@@ -1426,7 +1429,8 @@ export function UnifiedMap({
                     brightness(${basemapFilters.brightness}%)
                     contrast(${basemapFilters.contrast}%)
                     saturate(${basemapFilters.saturation}%)
-                    sepia(${basemapFilters.sepia}%);
+                    sepia(${basemapFilters.sepia}%)
+                    opacity(${basemapFilters.opacity ?? 100}%);
           }
         `}</style>
       )}

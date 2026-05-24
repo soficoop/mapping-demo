@@ -40,6 +40,7 @@ export interface Area {
     contrast: number
     saturation: number
     sepia: number
+    opacity: number
     enabled: boolean
   }
 }
@@ -63,4 +64,5 @@ export interface BasemapFilters {
   contrast: number // 50 to 150
   saturation: number // 0 to 200
   sepia: number // 0 to 100
+  opacity: number // 0 to 100
 }
