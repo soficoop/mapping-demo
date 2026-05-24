@@ -89,6 +89,18 @@ export function UnifiedMap({
   const currentLibraryRef = useRef<string>("")
   const currentBasemapRef = useRef<string>("")
 
+  // Keep track of the latest callbacks to avoid stale closures in event handlers
+  const onMapClickRef = useRef(onMapClick)
+  const onMoveEndRef = useRef(onMoveEnd)
+
+  useEffect(() => {
+    onMapClickRef.current = onMapClick
+  }, [onMapClick])
+
+  useEffect(() => {
+    onMoveEndRef.current = onMoveEnd
+  }, [onMoveEnd])
+
   // Keep track of Leaflet layers to clear/redraw
   const lfLayersRef = useRef<{
     basemap?: L.TileLayer
@@ -177,12 +189,12 @@ export function UnifiedMap({
       // Track moves
       map.on("moveend", () => {
         const c = map.getCenter()
-        onMoveEnd([c.lat, c.lng], map.getZoom())
+        onMoveEndRef.current([c.lat, c.lng], map.getZoom())
       })
 
       // Track clicks
       map.on("click", (e) => {
-        onMapClick(e.latlng.lat, e.latlng.lng)
+        onMapClickRef.current(e.latlng.lat, e.latlng.lng)
       })
 
       mapRef.current = map
@@ -226,12 +238,12 @@ export function UnifiedMap({
 
       map.on("moveend", () => {
         const c = map.getCenter()
-        onMoveEnd([c.lat, c.lng], Math.round(map.getZoom() + 1))
+        onMoveEndRef.current([c.lat, c.lng], Math.round(map.getZoom() + 1))
       })
 
       map.on("click", (e) => {
         // Only trigger draw/add if clicking empty map
-        onMapClick(e.lngLat.lat, e.lngLat.lng)
+        onMapClickRef.current(e.lngLat.lat, e.lngLat.lng)
       })
 
       mapRef.current = map
