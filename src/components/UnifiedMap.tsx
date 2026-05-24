@@ -402,6 +402,7 @@ export function UnifiedMap({
           fillColor: area.color,
           fillOpacity: 0.2,
           weight: 2.5,
+          interactive: drawingMode === "idle", // Disable interaction when drawing
         })
           .bindPopup(
             `<div class="p-1">
@@ -420,6 +421,7 @@ export function UnifiedMap({
           color: route.color,
           weight: route.weight,
           opacity: 0.8,
+          interactive: drawingMode === "idle", // Disable interaction when drawing
         })
           .bindPopup(
             `<div class="p-1">
@@ -467,6 +469,7 @@ export function UnifiedMap({
                 iconSize: [38, 38],
                 iconAnchor: [19, 19],
               }),
+              interactive: drawingMode === "idle", // Disable interaction when drawing
             })
               .bindPopup(
                 `<div class="p-2 leading-snug">
@@ -511,6 +514,7 @@ export function UnifiedMap({
               iconSize: [28, 28],
               iconAnchor: [14, 14],
             }),
+            interactive: drawingMode === "idle", // Disable interaction when drawing
           })
             .bindPopup(
               `<div class="p-1">
@@ -536,6 +540,7 @@ export function UnifiedMap({
               iconSize: [28, 28],
               iconAnchor: [14, 14],
             }),
+            interactive: drawingMode === "idle", // Disable interaction when drawing
           })
             .bindPopup(
               `<div class="p-1">
@@ -1002,7 +1007,16 @@ export function UnifiedMap({
         map.once("idle", renderMapLibreFeatures)
       }
     }
-  }, [pois, routes, areas, clusterMode, library, activeBasemap, activeOverlays])
+  }, [
+    pois,
+    routes,
+    areas,
+    clusterMode,
+    library,
+    activeBasemap,
+    activeOverlays,
+    drawingMode,
+  ])
 
   // 4. Render active/temporary Drawing Coordinates (Polyline/Polygon preview)
   useEffect(() => {
