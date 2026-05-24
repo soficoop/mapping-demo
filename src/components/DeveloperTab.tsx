@@ -30,9 +30,8 @@ export function DeveloperTab({
           Code Exporter & DX comparison
         </div>
         The code below automatically renders your visual configuration
-        (including base maps, selected overlay trails, and all custom
-        POIs, routes, and polygons) in a standalone index.html
-        template!
+        (including base maps, selected overlay trails, and all custom POIs,
+        routes, and polygons) in a standalone index.html template!
       </div>
 
       {/* Boilerplate code download buttons */}
@@ -43,9 +42,7 @@ export function DeveloperTab({
 
         <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-100 p-3 dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-bold">
-              Leaflet Code Block
-            </span>
+            <span className="text-xs font-bold">Leaflet Code Block</span>
             <Button
               size="sm"
               className="h-7 cursor-pointer px-2 text-[10px]"
@@ -81,9 +78,7 @@ export function DeveloperTab({
 
         <div className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-slate-100 p-3 dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-bold">
-              MapLibre GL Code Block
-            </span>
+            <span className="text-xs font-bold">MapLibre GL Code Block</span>
             <Button
               size="sm"
               className="h-7 cursor-pointer px-2 text-[10px]"
@@ -98,9 +93,7 @@ export function DeveloperTab({
                   areas
                 )
                 navigator.clipboard.writeText(code)
-                alert(
-                  "Copied MapLibre GL standalone code to clipboard!"
-                )
+                alert("Copied MapLibre GL standalone code to clipboard!")
               }}
             >
               Copy MapLibre Code
@@ -168,9 +161,7 @@ export function DeveloperTab({
               </tr>
               <tr>
                 <td className="p-2 font-semibold">3D Pitch/Rotate</td>
-                <td className="p-2 text-slate-600 dark:text-slate-400">
-                  No
-                </td>
+                <td className="p-2 text-slate-600 dark:text-slate-400">No</td>
                 <td className="p-2 text-slate-600 dark:text-slate-400">
                   Yes (Smooth pitch, roll)
                 </td>
@@ -181,8 +172,7 @@ export function DeveloperTab({
                   Huge (Plugins since 2011)
                 </td>
                 <td className="p-2 text-slate-600 dark:text-slate-400">
-                  Active (Standard mapbox/maptiler style
-                  compatibility)
+                  Active (Standard mapbox/maptiler style compatibility)
                 </td>
               </tr>
             </tbody>

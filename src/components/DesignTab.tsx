@@ -77,14 +77,14 @@ export function DesignTab({
         <div className="mt-2 text-[11px] leading-normal text-slate-500">
           {library === "leaflet" ? (
             <span>
-              💡 <b>Leaflet</b> is raster-based, highly modular, fast
-              loading, and extremely mature. Standard DOM markers.
+              💡 <b>Leaflet</b> is raster-based, highly modular, fast loading,
+              and extremely mature. Standard DOM markers.
             </span>
           ) : (
             <span>
-              ⚡ <b>MapLibre GL</b> utilizes GPU WebGL for vector
-              tiles. Supports smooth rotating, 3D pitching, and
-              rendering massive datasets.
+              ⚡ <b>MapLibre GL</b> utilizes GPU WebGL for vector tiles.
+              Supports smooth rotating, 3D pitching, and rendering massive
+              datasets.
             </span>
           )}
         </div>
@@ -106,9 +106,7 @@ export function DesignTab({
             "Custom Basemaps",
           ] as const
         ).map((cat) => {
-          const filtered = allBasemaps.filter(
-            (b) => b.category === cat
-          )
+          const filtered = allBasemaps.filter((b) => b.category === cat)
           if (filtered.length === 0) return null
 
           return (
@@ -119,11 +117,8 @@ export function DesignTab({
               <div className="grid grid-cols-1 gap-2">
                 {filtered.map((b) => {
                   const isActive = activeBasemap === b.id
-                  const isDisabledVector =
-                    b.isVector && library === "leaflet"
-                  const isCustom = customBasemaps.some(
-                    (cb) => cb.id === b.id
-                  )
+                  const isDisabledVector = b.isVector && library === "leaflet"
+                  const isCustom = customBasemaps.some((cb) => cb.id === b.id)
 
                   return (
                     <button
@@ -141,9 +136,7 @@ export function DesignTab({
                       }`}
                     >
                       <div className="flex w-full items-center justify-between">
-                        <span className="text-xs font-semibold">
-                          {b.name}
-                        </span>
+                        <span className="text-xs font-semibold">{b.name}</span>
                         <div className="flex items-center gap-1.5">
                           {b.isVector && (
                             <span className="rounded bg-indigo-100/50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600 uppercase dark:bg-indigo-900/30 dark:text-indigo-400">
@@ -168,8 +161,7 @@ export function DesignTab({
                       </p>
                       {isDisabledVector && (
                         <p className="mt-1 text-[9px] font-semibold text-rose-500">
-                          ⚠️ Requires MapLibre GL. Switch framework to
-                          enable.
+                          ⚠️ Requires MapLibre GL. Switch framework to enable.
                         </p>
                       )}
                     </button>
@@ -212,9 +204,7 @@ export function DesignTab({
                   <input
                     type="text"
                     value={newBasemapName}
-                    onChange={(e) =>
-                      setNewBasemapName(e.target.value)
-                    }
+                    onChange={(e) => setNewBasemapName(e.target.value)}
                     placeholder="e.g. My Custom Tiles"
                     className="w-full rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800"
                   />
@@ -267,9 +257,7 @@ export function DesignTab({
                   <input
                     type="text"
                     value={newBasemapAttribution}
-                    onChange={(e) =>
-                      setNewBasemapAttribution(e.target.value)
-                    }
+                    onChange={(e) => setNewBasemapAttribution(e.target.value)}
                     placeholder="&copy; OpenStreetMap contributors"
                     className="w-full rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800"
                   />
@@ -281,9 +269,7 @@ export function DesignTab({
                   </label>
                   <textarea
                     value={newBasemapDesc}
-                    onChange={(e) =>
-                      setNewBasemapDesc(e.target.value)
-                    }
+                    onChange={(e) => setNewBasemapDesc(e.target.value)}
                     placeholder="Brief description of this map source..."
                     rows={2}
                     className="w-full rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800"
@@ -309,10 +295,7 @@ export function DesignTab({
                 <Button
                   size="sm"
                   onClick={() => {
-                    if (
-                      !newBasemapName.trim() ||
-                      !newBasemapUrl.trim()
-                    ) {
+                    if (!newBasemapName.trim() || !newBasemapUrl.trim()) {
                       alert("Please fill in Name and URL!")
                       return
                     }
@@ -322,10 +305,8 @@ export function DesignTab({
                       name: newBasemapName,
                       category: "Custom Basemaps" as const,
                       attribution:
-                        newBasemapAttribution ||
-                        "Custom basemap provider",
-                      description:
-                        newBasemapDesc || "Custom user map source",
+                        newBasemapAttribution || "Custom basemap provider",
+                      description: newBasemapDesc || "Custom user map source",
                       ...(newBasemapIsVector
                         ? { styleUrl: newBasemapUrl, isVector: true }
                         : { url: newBasemapUrl }),
@@ -383,9 +364,9 @@ export function DesignTab({
             )}
           </div>
           <p className="text-[10px] leading-normal text-slate-500 dark:text-slate-400">
-            GPU-accelerated visual filters applied to the map
-            background tiles. Create dark-themes, sepia tones, or
-            entirely new map aesthetics in real-time.
+            GPU-accelerated visual filters applied to the map background tiles.
+            Create dark-themes, sepia tones, or entirely new map aesthetics in
+            real-time.
           </p>
 
           <div className="space-y-3 text-[11px]">
@@ -623,9 +604,7 @@ export function DesignTab({
                 />
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold">
-                      {over.name}
-                    </span>
+                    <span className="text-xs font-semibold">{over.name}</span>
                     <span className="text-[9px] font-bold text-slate-400 uppercase">
                       Raster Overlay
                     </span>
@@ -656,8 +635,7 @@ export function DesignTab({
           >
             <div className="text-xs font-semibold">No Clustering</div>
             <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
-              Show all individual markers at their exact locations on
-              all zooms.
+              Show all individual markers at their exact locations on all zooms.
             </p>
           </button>
 
@@ -690,8 +668,8 @@ export function DesignTab({
               )}
             </div>
             <p className="mt-0.5 text-[10px] leading-normal text-slate-500 dark:text-slate-400">
-              High-performance WebGL clustering with numbered counts
-              and dynamic boundaries.
+              High-performance WebGL clustering with numbered counts and dynamic
+              boundaries.
             </p>
           </button>
 
@@ -707,9 +685,9 @@ export function DesignTab({
               Custom Polygon Area Clustering
             </div>
             <p className="mt-0.5 text-[10px] leading-normal text-slate-500 dark:text-slate-400">
-              Group POIs automatically if they are geographically
-              inside any of your drawn polygon boundaries. Displays a
-              summary badge in each district.
+              Group POIs automatically if they are geographically inside any of
+              your drawn polygon boundaries. Displays a summary badge in each
+              district.
             </p>
           </button>
         </div>
