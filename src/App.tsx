@@ -12,9 +12,10 @@ import {
   Layers2,
   FolderTree,
   FileCode2,
+  SlidersHorizontal,
 } from "lucide-react"
-import { BASEMAPS, OVERLAYS } from "@/lib/providers"
-import type { POI, Route, Area, DrawingMode } from "@/lib/types"
+import { BASEMAPS, OVERLAYS, type BaseMapProvider } from "@/lib/providers"
+import type { POI, Route, Area, DrawingMode, BasemapFilters } from "@/lib/types"
 import {
   DEFAULT_CENTER,
   DEFAULT_ZOOM,
@@ -29,7 +30,8 @@ import {
   generateMapLibreCode,
   isPointInPolygon,
 } from "@/lib/geoUtils"
-import { UnifiedMap, getCategoryDetails } from "@/components/UnifiedMap"
+import { UnifiedMap } from "@/components/UnifiedMap"
+import { getCategoryDetails } from "@/lib/utils"
 import { Logo } from "@/components/Logo"
 import { Button } from "@/components/ui/button"
 
@@ -57,6 +59,37 @@ export function App() {
   const [clusterMode, setClusterMode] = useState<
     "none" | "maplibre-native" | "area-polygons"
   >("none")
+
+  // --- Custom Basemap & Filtering State ---
+  const [customBasemaps, setCustomBasemaps] = useState<BaseMapProvider[]>(
+    () => {
+      const saved = localStorage.getItem("mapping_demo_custom_basemaps")
+      return saved ? JSON.parse(saved) : []
+    }
+  )
+
+  const [basemapFilters, setBasemapFilters] = useState<BasemapFilters>(() => {
+    const saved = localStorage.getItem("mapping_demo_basemap_filters")
+    return saved
+      ? JSON.parse(saved)
+      : {
+          grayscale: 0,
+          invert: 0,
+          hueRotate: 0,
+          brightness: 100,
+          contrast: 100,
+          saturation: 100,
+          sepia: 0,
+        }
+  })
+
+  // Form States for Custom Basemap creation
+  const [showCustomBasemapForm, setShowCustomBasemapForm] = useState(false)
+  const [newBasemapName, setNewBasemapName] = useState("")
+  const [newBasemapUrl, setNewBasemapUrl] = useState("")
+  const [newBasemapAttribution, setNewBasemapAttribution] = useState("")
+  const [newBasemapDesc, setNewBasemapDesc] = useState("")
+  const [newBasemapIsVector, setNewBasemapIsVector] = useState(false)
 
   // --- Map Positioning State ---
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER)
@@ -90,6 +123,8 @@ export function App() {
   // File Input Ref for Import GeoJSON
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const allBasemaps = [...BASEMAPS, ...customBasemaps]
+
   // --- Sync database with LocalStorage ---
   useEffect(() => {
     localStorage.setItem("mapping_demo_pois", JSON.stringify(pois))
@@ -102,6 +137,20 @@ export function App() {
   useEffect(() => {
     localStorage.setItem("mapping_demo_areas", JSON.stringify(areas))
   }, [areas])
+
+  useEffect(() => {
+    localStorage.setItem(
+      "mapping_demo_custom_basemaps",
+      JSON.stringify(customBasemaps)
+    )
+  }, [customBasemaps])
+
+  useEffect(() => {
+    localStorage.setItem(
+      "mapping_demo_basemap_filters",
+      JSON.stringify(basemapFilters)
+    )
+  }, [basemapFilters])
 
   // --- Theme State (Sync with tailwind template) ---
   // Sync dark mode shortcut key 'd'
@@ -190,6 +239,23 @@ export function App() {
         description: shapeDescription,
         coordinates: tempCoordinates,
         color: shapeColor,
+        borderColor: shapeColor,
+        fillColor: shapeColor,
+        fillOpacity: 0.25,
+        strokeWeight: 2,
+        borderStyle: "solid",
+        blendMode: "normal",
+        glowEffect: false,
+        filters: {
+          grayscale: 0,
+          invert: 0,
+          hueRotate: 0,
+          brightness: 100,
+          contrast: 100,
+          saturation: 100,
+          sepia: 0,
+          enabled: false,
+        },
       }
       setAreas((prev) => [...prev, newArea])
     }
@@ -212,6 +278,14 @@ export function App() {
     setAreas((prev) => prev.filter((a) => a.id !== id))
   }
 
+  const handleDeleteCustomBasemap = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setCustomBasemaps((prev) => prev.filter((b) => b.id !== id))
+    if (activeBasemap === id) {
+      setActiveBasemap("osm-standard")
+    }
+  }
+
   // --- Database Portability ---
   const handleResetToDefaults = () => {
     if (
@@ -227,6 +301,16 @@ export function App() {
       setClusterMode("none")
       setCenter(DEFAULT_CENTER)
       setZoom(DEFAULT_ZOOM)
+      setCustomBasemaps([])
+      setBasemapFilters({
+        grayscale: 0,
+        invert: 0,
+        hueRotate: 0,
+        brightness: 100,
+        contrast: 100,
+        saturation: 100,
+        sepia: 0,
+      })
     }
   }
 
@@ -273,7 +357,7 @@ export function App() {
             "No compatible community map features (POIs, Routes, or Areas) found in this GeoJSON."
           )
         }
-      } catch (err) {
+      } catch {
         alert(
           "Error parsing GeoJSON. Please make sure it is a valid GeoJSON file."
         )
@@ -477,9 +561,10 @@ export function App() {
                     "Vector Style",
                     "Satellite & Topo",
                     "Commercial (Free Tier)",
+                    "Custom Basemaps",
                   ] as const
                 ).map((cat) => {
-                  const filtered = BASEMAPS.filter((b) => b.category === cat)
+                  const filtered = allBasemaps.filter((b) => b.category === cat)
                   if (filtered.length === 0) return null
 
                   return (
@@ -492,6 +577,9 @@ export function App() {
                           const isActive = activeBasemap === b.id
                           const isDisabledVector =
                             b.isVector && library === "leaflet"
+                          const isCustom = customBasemaps.some(
+                            (cb) => cb.id === b.id
+                          )
 
                           return (
                             <button
@@ -512,11 +600,24 @@ export function App() {
                                 <span className="text-xs font-semibold">
                                   {b.name}
                                 </span>
-                                {b.isVector && (
-                                  <span className="rounded bg-indigo-100/50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600 uppercase dark:bg-indigo-900/30 dark:text-indigo-400">
-                                    Vector Style
-                                  </span>
-                                )}
+                                <div className="flex items-center gap-1.5">
+                                  {b.isVector && (
+                                    <span className="rounded bg-indigo-100/50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-600 uppercase dark:bg-indigo-900/30 dark:text-indigo-400">
+                                      Vector Style
+                                    </span>
+                                  )}
+                                  {isCustom && (
+                                    <button
+                                      onClick={(e) =>
+                                        handleDeleteCustomBasemap(b.id, e)
+                                      }
+                                      className="cursor-pointer rounded p-1 text-slate-400 transition-colors hover:bg-slate-200 hover:text-rose-500 dark:hover:bg-slate-800"
+                                      title="Delete custom basemap"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                               <p className="mt-1 text-[10px] leading-snug text-slate-500 dark:text-slate-400">
                                 {b.description}
@@ -534,6 +635,385 @@ export function App() {
                     </div>
                   )
                 })}
+
+                {/* Custom Basemap Add Section */}
+                <div className="rounded-lg border border-dashed border-slate-300 p-3.5 dark:border-slate-700">
+                  {!showCustomBasemapForm ? (
+                    <button
+                      onClick={() => setShowCustomBasemapForm(true)}
+                      className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-md bg-slate-50 py-2.5 text-xs font-bold text-indigo-600 hover:bg-slate-100 dark:bg-slate-900/40 dark:text-indigo-400 dark:hover:bg-slate-800"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Custom Basemap Source
+                    </button>
+                  ) : (
+                    <div className="animate-fade-in space-y-3.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                          Create Custom Basemap
+                        </span>
+                        <button
+                          onClick={() => setShowCustomBasemapForm(false)}
+                          className="cursor-pointer text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-2 text-[11px]">
+                        <div>
+                          <label className="mb-1 block font-semibold text-slate-600 dark:text-slate-400">
+                            Basemap Name
+                          </label>
+                          <input
+                            type="text"
+                            value={newBasemapName}
+                            onChange={(e) => setNewBasemapName(e.target.value)}
+                            placeholder="e.g. My Custom Tiles"
+                            className="w-full rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800"
+                          />
+                        </div>
+
+                        <div className="flex gap-4 py-1">
+                          <label className="flex cursor-pointer items-center gap-1.5 font-semibold text-slate-600 dark:text-slate-400">
+                            <input
+                              type="radio"
+                              checked={!newBasemapIsVector}
+                              onChange={() => setNewBasemapIsVector(false)}
+                              className="h-3.5 w-3.5 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            Raster Tiles
+                          </label>
+                          <label className="flex cursor-pointer items-center gap-1.5 font-semibold text-slate-600 dark:text-slate-400">
+                            <input
+                              type="radio"
+                              checked={newBasemapIsVector}
+                              onChange={() => setNewBasemapIsVector(true)}
+                              className="h-3.5 w-3.5 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            Vector Style URL (MapLibre)
+                          </label>
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block font-semibold text-slate-600 dark:text-slate-400">
+                            {newBasemapIsVector
+                              ? "Vector Style JSON URL"
+                              : "Tile URL Template"}
+                          </label>
+                          <input
+                            type="text"
+                            value={newBasemapUrl}
+                            onChange={(e) => setNewBasemapUrl(e.target.value)}
+                            placeholder={
+                              newBasemapIsVector
+                                ? "https://tiles.openfreemap.org/styles/liberty"
+                                : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            }
+                            className="w-full rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block font-semibold text-slate-600 dark:text-slate-400">
+                            Attribution / Credits
+                          </label>
+                          <input
+                            type="text"
+                            value={newBasemapAttribution}
+                            onChange={(e) =>
+                              setNewBasemapAttribution(e.target.value)
+                            }
+                            placeholder="&copy; OpenStreetMap contributors"
+                            className="w-full rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-1 block font-semibold text-slate-600 dark:text-slate-400">
+                            Description
+                          </label>
+                          <textarea
+                            value={newBasemapDesc}
+                            onChange={(e) => setNewBasemapDesc(e.target.value)}
+                            placeholder="Brief description of this map source..."
+                            rows={2}
+                            className="w-full rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 pt-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowCustomBasemapForm(false)
+                            setNewBasemapName("")
+                            setNewBasemapUrl("")
+                            setNewBasemapAttribution("")
+                            setNewBasemapDesc("")
+                          }}
+                          className="flex-1 cursor-pointer text-xs"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            if (
+                              !newBasemapName.trim() ||
+                              !newBasemapUrl.trim()
+                            ) {
+                              alert("Please fill in Name and URL!")
+                              return
+                            }
+                            const newId = `custom-basemap-${Date.now()}`
+                            const newB = {
+                              id: newId,
+                              name: newBasemapName,
+                              category: "Custom Basemaps" as const,
+                              attribution:
+                                newBasemapAttribution ||
+                                "Custom basemap provider",
+                              description:
+                                newBasemapDesc || "Custom user map source",
+                              ...(newBasemapIsVector
+                                ? { styleUrl: newBasemapUrl, isVector: true }
+                                : { url: newBasemapUrl }),
+                            }
+                            setCustomBasemaps((prev) => [...prev, newB])
+                            setActiveBasemap(newId)
+                            setShowCustomBasemapForm(false)
+                            setNewBasemapName("")
+                            setNewBasemapUrl("")
+                            setNewBasemapAttribution("")
+                            setNewBasemapDesc("")
+                          }}
+                          className="flex-1 cursor-pointer bg-indigo-600 text-xs font-bold text-white hover:bg-indigo-700"
+                        >
+                          Save Basemap
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Basemap Color Adjustments */}
+                <div className="space-y-3.5 rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/20">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-1.5 text-xs font-extrabold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                      <SlidersHorizontal className="h-4 w-4 shrink-0 text-indigo-500" />
+                      2b. Map Color Adjustments
+                    </label>
+                    {(basemapFilters.grayscale > 0 ||
+                      basemapFilters.invert > 0 ||
+                      basemapFilters.hueRotate > 0 ||
+                      basemapFilters.brightness !== 100 ||
+                      basemapFilters.contrast !== 100 ||
+                      basemapFilters.saturation !== 100 ||
+                      basemapFilters.sepia > 0) && (
+                      <button
+                        onClick={() =>
+                          setBasemapFilters({
+                            grayscale: 0,
+                            invert: 0,
+                            hueRotate: 0,
+                            brightness: 100,
+                            contrast: 100,
+                            saturation: 100,
+                            sepia: 0,
+                          })
+                        }
+                        className="flex cursor-pointer items-center gap-0.5 text-[10px] font-bold text-rose-500 hover:underline"
+                      >
+                        <RotateCcw className="h-3 w-3" /> Reset
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[10px] leading-normal text-slate-500 dark:text-slate-400">
+                    GPU-accelerated visual filters applied to the map background
+                    tiles. Create dark-themes, sepia tones, or entirely new map
+                    aesthetics in real-time.
+                  </p>
+
+                  <div className="space-y-3 text-[11px]">
+                    {/* Grayscale */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-slate-600 dark:text-slate-400">
+                          Grayscale
+                        </span>
+                        <span className="font-mono text-slate-500">
+                          {basemapFilters.grayscale}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={basemapFilters.grayscale}
+                        onChange={(e) =>
+                          setBasemapFilters((prev) => ({
+                            ...prev,
+                            grayscale: parseInt(e.target.value),
+                          }))
+                        }
+                        className="h-1.5 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-800"
+                      />
+                    </div>
+
+                    {/* Invert */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-slate-600 dark:text-slate-400">
+                          Invert Colors (Darken Light Maps)
+                        </span>
+                        <span className="font-mono text-slate-500">
+                          {basemapFilters.invert}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={basemapFilters.invert}
+                        onChange={(e) =>
+                          setBasemapFilters((prev) => ({
+                            ...prev,
+                            invert: parseInt(e.target.value),
+                          }))
+                        }
+                        className="h-1.5 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-800"
+                      />
+                    </div>
+
+                    {/* Hue Rotate */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-slate-600 dark:text-slate-400">
+                          Hue Rotation (Color Shift)
+                        </span>
+                        <span className="font-mono text-slate-500">
+                          {basemapFilters.hueRotate}°
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="360"
+                        value={basemapFilters.hueRotate}
+                        onChange={(e) =>
+                          setBasemapFilters((prev) => ({
+                            ...prev,
+                            hueRotate: parseInt(e.target.value),
+                          }))
+                        }
+                        className="h-1.5 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-800"
+                      />
+                    </div>
+
+                    {/* Saturation */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-slate-600 dark:text-slate-400">
+                          Saturation (Vibrancy)
+                        </span>
+                        <span className="font-mono text-slate-500">
+                          {basemapFilters.saturation}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="200"
+                        value={basemapFilters.saturation}
+                        onChange={(e) =>
+                          setBasemapFilters((prev) => ({
+                            ...prev,
+                            saturation: parseInt(e.target.value),
+                          }))
+                        }
+                        className="h-1.5 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-800"
+                      />
+                    </div>
+
+                    {/* Brightness */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-slate-600 dark:text-slate-400">
+                          Brightness
+                        </span>
+                        <span className="font-mono text-slate-500">
+                          {basemapFilters.brightness}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="50"
+                        max="150"
+                        value={basemapFilters.brightness}
+                        onChange={(e) =>
+                          setBasemapFilters((prev) => ({
+                            ...prev,
+                            brightness: parseInt(e.target.value),
+                          }))
+                        }
+                        className="h-1.5 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-800"
+                      />
+                    </div>
+
+                    {/* Contrast */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-slate-600 dark:text-slate-400">
+                          Contrast
+                        </span>
+                        <span className="font-mono text-slate-500">
+                          {basemapFilters.contrast}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="50"
+                        max="150"
+                        value={basemapFilters.contrast}
+                        onChange={(e) =>
+                          setBasemapFilters((prev) => ({
+                            ...prev,
+                            contrast: parseInt(e.target.value),
+                          }))
+                        }
+                        className="h-1.5 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-800"
+                      />
+                    </div>
+
+                    {/* Sepia */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-slate-600 dark:text-slate-400">
+                          Sepia Tone
+                        </span>
+                        <span className="font-mono text-slate-500">
+                          {basemapFilters.sepia}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={basemapFilters.sepia}
+                        onChange={(e) =>
+                          setBasemapFilters((prev) => ({
+                            ...prev,
+                            sepia: parseInt(e.target.value),
+                          }))
+                        }
+                        className="h-1.5 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-800"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Overlays (Layers on Top) */}
@@ -1078,35 +1558,539 @@ export function App() {
                       No custom area regions drawn yet.
                     </div>
                   ) : (
-                    <div className="max-h-[160px] space-y-1.5 overflow-y-auto pr-1">
+                    <div className="max-h-[350px] space-y-2.5 overflow-y-auto pr-1">
                       {areas.map((area) => (
                         <div
                           key={area.id}
-                          className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-2.5 text-xs dark:border-slate-700 dark:bg-slate-800/80"
+                          className="flex flex-col space-y-2 rounded-lg border border-slate-200 bg-white p-3 text-xs dark:border-slate-700 dark:bg-slate-800/80"
                         >
-                          <div className="flex items-center gap-2 truncate pr-2">
-                            <div
-                              className="h-3 w-3 shrink-0 rounded border opacity-80"
-                              style={{
-                                backgroundColor: area.color,
-                                borderColor: area.color,
-                              }}
-                            />
-                            <div className="truncate">
-                              <div className="truncate font-semibold">
-                                {area.name}
-                              </div>
-                              <div className="text-[9px] text-slate-400">
-                                {area.coordinates.length} coordinates
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 truncate pr-2">
+                              <div
+                                className="h-3.5 w-3.5 shrink-0 rounded border opacity-80"
+                                style={{
+                                  backgroundColor: area.color,
+                                  borderColor: area.color,
+                                }}
+                              />
+                              <div className="truncate">
+                                <div className="truncate font-semibold text-slate-800 dark:text-slate-100">
+                                  {area.name}
+                                </div>
+                                <div className="text-[9px] text-slate-400">
+                                  {area.coordinates.length} coordinates
+                                </div>
                               </div>
                             </div>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => {
+                                  const pts = area.coordinates
+                                  if (pts.length > 0) {
+                                    let latSum = 0,
+                                      lngSum = 0
+                                    pts.forEach(([lat, lng]) => {
+                                      latSum += lat
+                                      lngSum += lng
+                                    })
+                                    const centroidLat = latSum / pts.length
+                                    const centroidLng = lngSum / pts.length
+                                    setCenter([centroidLat, centroidLng])
+                                    setZoom(15)
+                                  }
+                                }}
+                                className="cursor-pointer rounded bg-indigo-50 px-2 py-0.5 text-[9px] font-bold text-indigo-600 transition-colors hover:bg-indigo-100 dark:bg-indigo-950/40 dark:text-indigo-400 dark:hover:bg-indigo-900"
+                                title="Recenter map on this area"
+                              >
+                                Focus 🎯
+                              </button>
+                              <button
+                                onClick={() => handleDeleteArea(area.id)}
+                                className="shrink-0 cursor-pointer rounded p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-rose-500 dark:hover:bg-slate-700"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </div>
-                          <button
-                            onClick={() => handleDeleteArea(area.id)}
-                            className="shrink-0 cursor-pointer rounded p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-red-500 dark:hover:bg-slate-700"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+
+                          {/* Unique Styling Controls */}
+                          <div className="animate-fade-in space-y-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-bold tracking-wider text-indigo-500 uppercase">
+                                Area Styling Controls
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-[10px]">
+                              {/* Color inputs */}
+                              <div>
+                                <label className="mb-0.5 block text-[9px] font-semibold text-slate-400 uppercase">
+                                  Border
+                                </label>
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    type="color"
+                                    value={area.borderColor || area.color}
+                                    onChange={(e) => {
+                                      const val = e.target.value
+                                      setAreas((prev) =>
+                                        prev.map((a) =>
+                                          a.id === area.id
+                                            ? { ...a, borderColor: val }
+                                            : a
+                                        )
+                                      )
+                                    }}
+                                    className="h-6 w-9 shrink-0 cursor-pointer rounded border border-slate-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-900"
+                                  />
+                                  <span className="truncate font-mono text-[9px]">
+                                    {area.borderColor || area.color}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="mb-0.5 block text-[9px] font-semibold text-slate-400 uppercase">
+                                  Fill
+                                </label>
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    type="color"
+                                    value={area.fillColor || area.color}
+                                    onChange={(e) => {
+                                      const val = e.target.value
+                                      setAreas((prev) =>
+                                        prev.map((a) =>
+                                          a.id === area.id
+                                            ? { ...a, fillColor: val }
+                                            : a
+                                        )
+                                      )
+                                    }}
+                                    className="h-6 w-9 shrink-0 cursor-pointer rounded border border-slate-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-900"
+                                  />
+                                  <span className="truncate font-mono text-[9px]">
+                                    {area.fillColor || area.color}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-[10px]">
+                              {/* Stroke Weight */}
+                              <div>
+                                <div className="mb-0.5 flex justify-between text-[9px] font-semibold text-slate-400 uppercase">
+                                  <span>
+                                    Border ({area.strokeWeight ?? 2}px)
+                                  </span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="8"
+                                  value={area.strokeWeight ?? 2}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value)
+                                    setAreas((prev) =>
+                                      prev.map((a) =>
+                                        a.id === area.id
+                                          ? { ...a, strokeWeight: val }
+                                          : a
+                                      )
+                                    )
+                                  }}
+                                  className="h-1 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-700"
+                                />
+                              </div>
+
+                              {/* Fill Opacity */}
+                              <div>
+                                <div className="mb-0.5 flex justify-between text-[9px] font-semibold text-slate-400 uppercase">
+                                  <span>
+                                    Opacity (
+                                    {Math.round(
+                                      (area.fillOpacity ?? 0.25) * 100
+                                    )}
+                                    %)
+                                  </span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  value={Math.round(
+                                    (area.fillOpacity ?? 0.25) * 100
+                                  )}
+                                  onChange={(e) => {
+                                    const val = parseFloat(
+                                      (parseInt(e.target.value) / 100).toFixed(
+                                        2
+                                      )
+                                    )
+                                    setAreas((prev) =>
+                                      prev.map((a) =>
+                                        a.id === area.id
+                                          ? { ...a, fillOpacity: val }
+                                          : a
+                                      )
+                                    )
+                                  }}
+                                  className="h-1 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-700"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-[10px]">
+                              {/* Border Style */}
+                              <div>
+                                <label className="mb-0.5 block text-[9px] font-semibold text-slate-400 uppercase">
+                                  Border Style
+                                </label>
+                                <select
+                                  value={area.borderStyle || "solid"}
+                                  onChange={(e) => {
+                                    const val = e.target.value as
+                                      | "solid"
+                                      | "dashed"
+                                      | "dotted"
+                                      | "none"
+                                    setAreas((prev) =>
+                                      prev.map((a) =>
+                                        a.id === area.id
+                                          ? { ...a, borderStyle: val }
+                                          : a
+                                      )
+                                    )
+                                  }}
+                                  className="w-full cursor-pointer rounded border border-slate-200 bg-slate-50 p-1 text-[10px] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                                >
+                                  <option value="solid">Solid</option>
+                                  <option value="dashed">Dashed</option>
+                                  <option value="dotted">Dotted</option>
+                                  <option value="none">None</option>
+                                </select>
+                              </div>
+
+                              {/* Blend Mode */}
+                              <div>
+                                <label className="mb-0.5 block text-[9px] font-semibold text-slate-400 uppercase">
+                                  Blend Effect
+                                </label>
+                                <select
+                                  value={area.blendMode || "normal"}
+                                  onChange={(e) => {
+                                    const val = e.target.value as
+                                      | "normal"
+                                      | "color"
+                                      | "multiply"
+                                      | "overlay"
+                                    setAreas((prev) =>
+                                      prev.map((a) =>
+                                        a.id === area.id
+                                          ? { ...a, blendMode: val }
+                                          : a
+                                      )
+                                    )
+                                  }}
+                                  className="w-full cursor-pointer rounded border border-slate-200 bg-slate-50 p-1 text-[10px] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                                >
+                                  <option value="normal">Normal Blend</option>
+                                  <option value="color">Color Tint 🎨</option>
+                                  <option value="multiply">
+                                    Multiply (Darken)
+                                  </option>
+                                  <option value="overlay">
+                                    Overlay (High Contrast)
+                                  </option>
+                                </select>
+                              </div>
+                            </div>
+
+                            {/* Glow Effect Toggle */}
+                            <label className="mt-1 flex cursor-pointer items-center gap-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                              <input
+                                type="checkbox"
+                                checked={area.glowEffect || false}
+                                onChange={(e) => {
+                                  const val = e.target.checked
+                                  setAreas((prev) =>
+                                    prev.map((a) =>
+                                      a.id === area.id
+                                        ? { ...a, glowEffect: val }
+                                        : a
+                                    )
+                                  )
+                                }}
+                                className="h-3.5 w-3.5 cursor-pointer rounded text-indigo-600 focus:ring-indigo-500"
+                              />
+                              Enable Outer Neon Glow 🌟
+                            </label>
+
+                            {/* Filter Overrides Container */}
+                            <div className="space-y-1.5 border-t border-slate-100 pt-2 dark:border-slate-800">
+                              <label className="flex cursor-pointer items-center gap-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                                <input
+                                  type="checkbox"
+                                  checked={area.filters?.enabled || false}
+                                  onChange={(e) => {
+                                    const val = e.target.checked
+                                    setAreas((prev) =>
+                                      prev.map((a) =>
+                                        a.id === area.id
+                                          ? {
+                                              ...a,
+                                              filters: {
+                                                grayscale:
+                                                  a.filters?.grayscale ?? 0,
+                                                invert: a.filters?.invert ?? 0,
+                                                hueRotate:
+                                                  a.filters?.hueRotate ?? 0,
+                                                brightness:
+                                                  a.filters?.brightness ?? 100,
+                                                contrast:
+                                                  a.filters?.contrast ?? 100,
+                                                saturation:
+                                                  a.filters?.saturation ?? 100,
+                                                sepia: a.filters?.sepia ?? 0,
+                                                enabled: val,
+                                              },
+                                            }
+                                          : a
+                                      )
+                                    )
+                                  }}
+                                  className="h-3.5 w-3.5 cursor-pointer rounded text-indigo-600 focus:ring-indigo-500"
+                                />
+                                Override Global Filters 🎛️
+                              </label>
+
+                              {area.filters?.enabled && (
+                                <div className="animate-fade-in space-y-2 rounded border border-indigo-100 bg-indigo-50/20 p-2 text-[10px] dark:border-slate-800 dark:bg-slate-900/40">
+                                  <div className="mb-1 text-[9px] font-semibold text-indigo-600 italic dark:text-indigo-400">
+                                    💡 Active only inside this polygon (Leaflet
+                                    JS)
+                                  </div>
+
+                                  {/* Grayscale */}
+                                  <div className="space-y-0.5">
+                                    <div className="flex justify-between text-[9px] font-semibold text-slate-500">
+                                      <span>Grayscale</span>
+                                      <span>{area.filters.grayscale}%</span>
+                                    </div>
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="100"
+                                      value={area.filters.grayscale}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value)
+                                        setAreas((prev) =>
+                                          prev.map((a) =>
+                                            a.id === area.id && a.filters
+                                              ? {
+                                                  ...a,
+                                                  filters: {
+                                                    ...a.filters,
+                                                    grayscale: val,
+                                                  },
+                                                }
+                                              : a
+                                          )
+                                        )
+                                      }}
+                                      className="h-1 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-700"
+                                    />
+                                  </div>
+
+                                  {/* Invert */}
+                                  <div className="space-y-0.5">
+                                    <div className="flex justify-between text-[9px] font-semibold text-slate-500">
+                                      <span>Invert Colors</span>
+                                      <span>{area.filters.invert}%</span>
+                                    </div>
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="100"
+                                      value={area.filters.invert}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value)
+                                        setAreas((prev) =>
+                                          prev.map((a) =>
+                                            a.id === area.id && a.filters
+                                              ? {
+                                                  ...a,
+                                                  filters: {
+                                                    ...a.filters,
+                                                    invert: val,
+                                                  },
+                                                }
+                                              : a
+                                          )
+                                        )
+                                      }}
+                                      className="h-1 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-700"
+                                    />
+                                  </div>
+
+                                  {/* Hue Rotate */}
+                                  <div className="space-y-0.5">
+                                    <div className="flex justify-between text-[9px] font-semibold text-slate-500">
+                                      <span>Hue Rotation</span>
+                                      <span>{area.filters.hueRotate}°</span>
+                                    </div>
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="360"
+                                      value={area.filters.hueRotate}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value)
+                                        setAreas((prev) =>
+                                          prev.map((a) =>
+                                            a.id === area.id && a.filters
+                                              ? {
+                                                  ...a,
+                                                  filters: {
+                                                    ...a.filters,
+                                                    hueRotate: val,
+                                                  },
+                                                }
+                                              : a
+                                          )
+                                        )
+                                      }}
+                                      className="h-1 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-700"
+                                    />
+                                  </div>
+
+                                  {/* Saturation */}
+                                  <div className="space-y-0.5">
+                                    <div className="flex justify-between text-[9px] font-semibold text-slate-500">
+                                      <span>Saturation</span>
+                                      <span>{area.filters.saturation}%</span>
+                                    </div>
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="200"
+                                      value={area.filters.saturation}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value)
+                                        setAreas((prev) =>
+                                          prev.map((a) =>
+                                            a.id === area.id && a.filters
+                                              ? {
+                                                  ...a,
+                                                  filters: {
+                                                    ...a.filters,
+                                                    saturation: val,
+                                                  },
+                                                }
+                                              : a
+                                          )
+                                        )
+                                      }}
+                                      className="h-1 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-700"
+                                    />
+                                  </div>
+
+                                  {/* Brightness */}
+                                  <div className="space-y-0.5">
+                                    <div className="flex justify-between text-[9px] font-semibold text-slate-500">
+                                      <span>Brightness</span>
+                                      <span>{area.filters.brightness}%</span>
+                                    </div>
+                                    <input
+                                      type="range"
+                                      min="50"
+                                      max="150"
+                                      value={area.filters.brightness}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value)
+                                        setAreas((prev) =>
+                                          prev.map((a) =>
+                                            a.id === area.id && a.filters
+                                              ? {
+                                                  ...a,
+                                                  filters: {
+                                                    ...a.filters,
+                                                    brightness: val,
+                                                  },
+                                                }
+                                              : a
+                                          )
+                                        )
+                                      }}
+                                      className="h-1 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-700"
+                                    />
+                                  </div>
+
+                                  {/* Contrast */}
+                                  <div className="space-y-0.5">
+                                    <div className="flex justify-between text-[9px] font-semibold text-slate-500">
+                                      <span>Contrast</span>
+                                      <span>{area.filters.contrast}%</span>
+                                    </div>
+                                    <input
+                                      type="range"
+                                      min="50"
+                                      max="150"
+                                      value={area.filters.contrast}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value)
+                                        setAreas((prev) =>
+                                          prev.map((a) =>
+                                            a.id === area.id && a.filters
+                                              ? {
+                                                  ...a,
+                                                  filters: {
+                                                    ...a.filters,
+                                                    contrast: val,
+                                                  },
+                                                }
+                                              : a
+                                          )
+                                        )
+                                      }}
+                                      className="h-1 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-700"
+                                    />
+                                  </div>
+
+                                  {/* Sepia */}
+                                  <div className="space-y-0.5">
+                                    <div className="flex justify-between text-[9px] font-semibold text-slate-500">
+                                      <span>Sepia Tone</span>
+                                      <span>{area.filters.sepia}%</span>
+                                    </div>
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="100"
+                                      value={area.filters.sepia}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value)
+                                        setAreas((prev) =>
+                                          prev.map((a) =>
+                                            a.id === area.id && a.filters
+                                              ? {
+                                                  ...a,
+                                                  filters: {
+                                                    ...a.filters,
+                                                    sepia: val,
+                                                  },
+                                                }
+                                              : a
+                                          )
+                                        )
+                                      }}
+                                      className="h-1 w-full cursor-pointer rounded bg-slate-200 accent-indigo-600 dark:bg-slate-700"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1468,6 +2452,8 @@ export function App() {
             setCenter(c)
             setZoom(z)
           }}
+          customBasemaps={customBasemaps}
+          basemapFilters={basemapFilters}
         />
       </main>
     </div>

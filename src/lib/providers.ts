@@ -6,6 +6,7 @@ export interface BaseMapProvider {
     | "Commercial (Free Tier)"
     | "Satellite & Topo"
     | "Vector Style"
+    | "Custom Basemaps"
   attribution: string
   url?: string // Raster tile URL for Leaflet
   styleUrl?: string // MapLibre vector style URL (if vector)

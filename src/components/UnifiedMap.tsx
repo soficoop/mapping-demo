@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react"
 import L from "leaflet"
 import maplibregl from "maplibre-gl"
-import type { POI, Route, Area, DrawingMode } from "@/lib/types"
-import { BASEMAPS, OVERLAYS } from "@/lib/providers"
+import type { POI, Route, Area, DrawingMode, BasemapFilters } from "@/lib/types"
+import { BASEMAPS, OVERLAYS, type BaseMapProvider } from "@/lib/providers"
 import { isPointInPolygon } from "@/lib/geoUtils"
+import { getCategoryDetails } from "@/lib/utils"
 
 interface UnifiedMapProps {
   library: "leaflet" | "maplibre"
@@ -19,6 +20,8 @@ interface UnifiedMapProps {
   clusterMode: "none" | "maplibre-native" | "area-polygons"
   onMapClick: (lat: number, lng: number) => void
   onMoveEnd: (center: [number, number], zoom: number) => void
+  customBasemaps?: BaseMapProvider[]
+  basemapFilters?: BasemapFilters
 }
 
 // Centroid of area polygon
@@ -53,22 +56,6 @@ if (
     })
 }
 
-// Get marker category details (color, symbol)
-export function getCategoryDetails(category: string) {
-  switch (category) {
-    case "Culture & Religion":
-      return { symbol: "🏛️", bg: "bg-amber-500", border: "border-amber-600" }
-    case "Food & Drink":
-      return { symbol: "🍔", bg: "bg-red-500", border: "border-red-600" }
-    case "Nature & Parks":
-      return { symbol: "🌳", bg: "bg-green-500", border: "border-green-600" }
-    case "Services & Facilities":
-      return { symbol: "🔧", bg: "bg-teal-500", border: "border-teal-600" }
-    default:
-      return { symbol: "📍", bg: "bg-blue-500", border: "border-blue-600" }
-  }
-}
-
 export function UnifiedMap({
   library,
   activeBasemap,
@@ -83,9 +70,13 @@ export function UnifiedMap({
   clusterMode,
   onMapClick,
   onMoveEnd,
+  customBasemaps = [],
+  basemapFilters,
 }: UnifiedMapProps) {
+  const allBasemaps = [...BASEMAPS, ...customBasemaps]
+
   const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<any>(null)
+  const mapRef = useRef<L.Map | maplibregl.Map | null>(null)
   const currentLibraryRef = useRef<string>("")
   const currentBasemapRef = useRef<string>("")
 
@@ -120,6 +111,15 @@ export function UnifiedMap({
     drawMarkers: [],
     areaClusters: [],
   })
+
+  // Keep track of Leaflet clip layers and event listeners
+  const lfClipLayersRef = useRef<{
+    [areaId: string]: {
+      layer: L.TileLayer
+      paneId: string
+      listener?: () => void
+    }
+  }>({})
 
   // Keep track of MapLibre markers to clear
   const mlMarkersRef = useRef<maplibregl.Marker[]>([])
@@ -160,19 +160,20 @@ export function UnifiedMap({
     // Clean up previous map if library changed
     if (mapRef.current) {
       if (currentLibraryRef.current === "leaflet") {
-        mapRef.current.remove()
+        ;(mapRef.current as L.Map).remove()
       } else if (currentLibraryRef.current === "maplibre") {
         // Clean maplibre markers
         mlMarkersRef.current.forEach((m) => m.remove())
         mlMarkersRef.current = []
-        mapRef.current.remove()
+        ;(mapRef.current as maplibregl.Map).remove()
       }
       mapRef.current = null
     }
 
     // Ensure Leaflet starts with a clean DOM node
     if (containerRef.current) {
-      delete (containerRef.current as any)._leaflet_id
+      delete (containerRef.current as unknown as Record<string, unknown>)
+        ._leaflet_id
     }
 
     currentLibraryRef.current = library
@@ -201,9 +202,10 @@ export function UnifiedMap({
     } else {
       // Create MapLibre GL Map
       const selectedBasemap =
-        BASEMAPS.find((b) => b.id === activeBasemap) || BASEMAPS[0]
+        allBasemaps.find((b) => b.id === activeBasemap) || allBasemaps[0]
 
-      let styleDef: any = ""
+      let styleDef: string | maplibregl.StyleSpecification | undefined =
+        undefined
       if (selectedBasemap.isVector) {
         styleDef = selectedBasemap.styleUrl
       } else {
@@ -220,11 +222,11 @@ export function UnifiedMap({
           layers: [
             {
               id: "raster-layer",
-              type: "raster",
+              type: "raster" as const,
               source: "raster-tiles",
             },
           ],
-        }
+        } as unknown as maplibregl.StyleSpecification
       }
 
       const map = new maplibregl.Map({
@@ -257,11 +259,12 @@ export function UnifiedMap({
           mlMarkersRef.current.forEach((m) => m.remove())
           mlMarkersRef.current = []
         }
-        mapRef.current.remove()
+        ;(mapRef.current as L.Map).remove()
         mapRef.current = null
       }
       if (containerRef.current) {
-        delete (containerRef.current as any)._leaflet_id
+        delete (containerRef.current as unknown as Record<string, unknown>)
+          ._leaflet_id
       }
     }
   }, [library])
@@ -270,11 +273,13 @@ export function UnifiedMap({
   const panTo = (lat: number, lng: number, customZoom?: number) => {
     if (!mapRef.current) return
     if (library === "leaflet") {
-      mapRef.current.flyTo([lat, lng], customZoom || mapRef.current.getZoom())
+      const map = mapRef.current as L.Map
+      map.flyTo([lat, lng], customZoom || map.getZoom())
     } else {
-      mapRef.current.flyTo({
+      const map = mapRef.current as maplibregl.Map
+      map.flyTo({
         center: [lng, lat],
-        zoom: customZoom ? customZoom - 1 : mapRef.current.getZoom(),
+        zoom: customZoom ? customZoom - 1 : map.getZoom(),
         essential: true,
       })
     }
@@ -285,7 +290,7 @@ export function UnifiedMap({
     if (!mapRef.current) return
 
     const selectedBasemap =
-      BASEMAPS.find((b) => b.id === activeBasemap) || BASEMAPS[0]
+      allBasemaps.find((b) => b.id === activeBasemap) || allBasemaps[0]
 
     if (library === "leaflet") {
       const map = mapRef.current as L.Map
@@ -304,7 +309,13 @@ export function UnifiedMap({
       }
 
       if (url) {
+        // Create custom global-basemap pane to isolate global filters from area overrides
+        if (!map.getPane("global-basemap")) {
+          const pane = map.createPane("global-basemap", map.getPane("tilePane"))
+          pane.style.zIndex = "200"
+        }
         lfLayersRef.current.basemap = L.tileLayer(url, {
+          pane: "global-basemap",
           attribution: selectedBasemap.attribution,
           maxZoom: 19,
         }).addTo(map)
@@ -324,6 +335,7 @@ export function UnifiedMap({
         const over = OVERLAYS.find((o) => o.id === id)
         if (over && !lfLayersRef.current.overlays[id]) {
           lfLayersRef.current.overlays[id] = L.tileLayer(over.url, {
+            pane: "global-basemap",
             attribution: over.attribution,
             opacity: 0.65,
           }).addTo(map)
@@ -363,7 +375,7 @@ export function UnifiedMap({
               },
             ],
           }
-          map.setStyle(rasterStyle as any)
+          map.setStyle(rasterStyle as unknown as maplibregl.StyleSpecification)
         }
       }
 
@@ -382,6 +394,28 @@ export function UnifiedMap({
     if (library === "leaflet") {
       const map = mapRef.current as L.Map
 
+      // Differential update of clip layers:
+      // 1. Identify which area IDs currently have filters enabled
+      const activeFilterAreaIds = new Set(
+        areas.filter((a) => a.filters?.enabled).map((a) => a.id)
+      )
+
+      // 2. Remove any clip layers that are no longer active
+      Object.keys(lfClipLayersRef.current).forEach((id) => {
+        if (!activeFilterAreaIds.has(id)) {
+          const item = lfClipLayersRef.current[id]
+          map.removeLayer(item.layer)
+          if (item.listener) {
+            map.off("move moveend zoom", item.listener)
+          }
+          const pane = map.getPane(item.paneId)
+          if (pane) {
+            pane.remove()
+          }
+          delete lfClipLayersRef.current[id]
+        }
+      })
+
       // Clear previous layers
       lfLayersRef.current.pois.forEach((layer) => map.removeLayer(layer))
       lfLayersRef.current.routes.forEach((layer) => map.removeLayer(layer))
@@ -398,10 +432,17 @@ export function UnifiedMap({
       // Render Areas (Polygons)
       areas.forEach((area) => {
         const polygon = L.polygon(area.coordinates, {
-          color: area.color,
-          fillColor: area.color,
-          fillOpacity: 0.2,
-          weight: 2.5,
+          stroke: area.borderStyle !== "none" && (area.strokeWeight ?? 2.5) > 0,
+          color: area.borderColor || area.color,
+          fillColor: area.fillColor || area.color,
+          fillOpacity: area.fillOpacity ?? 0.2,
+          weight: area.strokeWeight ?? 2.5,
+          dashArray:
+            area.borderStyle === "dashed"
+              ? "6, 6"
+              : area.borderStyle === "dotted"
+                ? "2, 5"
+                : undefined,
           interactive: drawingMode === "idle", // Disable interaction when drawing
         })
           .bindPopup(
@@ -412,7 +453,113 @@ export function UnifiedMap({
           )
           .addTo(map)
 
+        const el = polygon.getElement() as SVGPathElement | undefined
+        if (el) {
+          if (area.blendMode && area.blendMode !== "normal") {
+            el.style.mixBlendMode = area.blendMode
+          }
+          if (area.glowEffect) {
+            el.style.filter = `drop-shadow(0 0 6px ${area.borderColor || area.color})`
+          }
+        }
+
         lfLayersRef.current.areas.push(polygon)
+
+        // Local Filter Overrides inside this Area polygon!
+        if (area.filters?.enabled) {
+          const paneId = `pane-${area.id}`
+          const existing = lfClipLayersRef.current[area.id]
+
+          if (existing) {
+            // Simply update the CSS filters!
+            const paneEl = map.getPane(paneId)
+            if (paneEl && area.filters) {
+              paneEl.style.filter = `
+                grayscale(${area.filters.grayscale}%)
+                invert(${area.filters.invert}%)
+                hue-rotate(${area.filters.hueRotate}deg)
+                brightness(${area.filters.brightness}%)
+                contrast(${area.filters.contrast}%)
+                saturate(${area.filters.saturation}%)
+                sepia(${area.filters.sepia}%)
+              `
+            }
+            // Keep the tile layer URL in sync!
+            const selectedBasemap =
+              allBasemaps.find((b) => b.id === activeBasemap) || allBasemaps[0]
+            let url = selectedBasemap.url
+            if (selectedBasemap.isVector) {
+              url =
+                "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            }
+            if (url) {
+              existing.layer.setUrl(url)
+            }
+            // Trigger an immediate clip path refresh
+            if (existing.listener) {
+              existing.listener()
+            }
+          } else {
+            // Create brand new custom pane nested inside tilePane (prevents drift)
+            if (!map.getPane(paneId)) {
+              const pane = map.createPane(paneId, map.getPane("tilePane"))
+              pane.style.zIndex = "205" // Above base map tilepane (200), below SVG paths/markers (400)
+            }
+
+            const selectedBasemap =
+              allBasemaps.find((b) => b.id === activeBasemap) || allBasemaps[0]
+            let url = selectedBasemap.url
+            if (selectedBasemap.isVector) {
+              url =
+                "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            }
+
+            if (url) {
+              const clipLayer = L.tileLayer(url, {
+                pane: paneId,
+                attribution: selectedBasemap.attribution,
+                maxZoom: 19,
+              }).addTo(map)
+
+              const paneEl = map.getPane(paneId)
+              if (paneEl && area.filters) {
+                paneEl.style.filter = `
+                  grayscale(${area.filters.grayscale}%)
+                  invert(${area.filters.invert}%)
+                  hue-rotate(${area.filters.hueRotate}deg)
+                  brightness(${area.filters.brightness}%)
+                  contrast(${area.filters.contrast}%)
+                  saturate(${area.filters.saturation}%)
+                  sepia(${area.filters.sepia}%)
+                `
+              }
+
+              // Use latLngToLayerPoint for pixel offsets relative to the moving layer/pane (locks zoom & pan)
+              const updateClipPath = () => {
+                const pEl = map.getPane(paneId)
+                if (!pEl) return
+                const points = area.coordinates.map((latlng) => {
+                  const pt = map.latLngToLayerPoint(
+                    L.latLng(latlng[0], latlng[1])
+                  )
+                  return `${pt.x}px ${pt.y}px`
+                })
+                pEl.style.clipPath = `polygon(${points.join(", ")})`
+              }
+
+              // Bind update events
+              updateClipPath()
+              map.on("move moveend zoom", updateClipPath)
+
+              // Save for cleanup
+              lfClipLayersRef.current[area.id] = {
+                layer: clipLayer,
+                paneId,
+                listener: updateClipPath,
+              }
+            }
+          }
+        }
       })
 
       // Render Routes (Polylines)
@@ -579,7 +726,11 @@ export function UnifiedMap({
 
         // Layers removal list
         safeRemoveLayer("areas-fill")
+        safeRemoveLayer("areas-glow")
         safeRemoveLayer("areas-outline")
+        safeRemoveLayer("areas-outline-solid")
+        safeRemoveLayer("areas-outline-dashed")
+        safeRemoveLayer("areas-outline-dotted")
         safeRemoveSource("areas-source")
 
         safeRemoveLayer("routes-layer")
@@ -623,6 +774,12 @@ export function UnifiedMap({
             name: area.name,
             description: area.description,
             color: area.color,
+            borderColor: area.borderColor || area.color,
+            fillColor: area.fillColor || area.color,
+            fillOpacity: area.fillOpacity ?? 0.15,
+            strokeWeight: area.strokeWeight ?? 2,
+            borderStyle: area.borderStyle || "solid",
+            glowEffect: area.glowEffect ? 1 : 0,
           },
           geometry: {
             type: "Polygon",
@@ -640,7 +797,7 @@ export function UnifiedMap({
             type: "geojson",
             data: {
               type: "FeatureCollection",
-              features: areaFeatures as any,
+              features: areaFeatures as unknown as maplibregl.GeoJSONFeature[],
             },
           })
 
@@ -649,18 +806,69 @@ export function UnifiedMap({
             type: "fill",
             source: "areas-source",
             paint: {
-              "fill-color": ["get", "color"],
-              "fill-opacity": 0.15,
+              "fill-color": ["get", "fillColor"],
+              "fill-opacity": ["get", "fillOpacity"],
             },
           })
 
+          // Glow Layer (drawn underneath outline layers)
           map.addLayer({
-            id: "areas-outline",
+            id: "areas-glow",
             type: "line",
             source: "areas-source",
             paint: {
-              "line-color": ["get", "color"],
-              "line-width": 2,
+              "line-color": ["get", "borderColor"],
+              "line-width": ["*", ["get", "strokeWeight"], 4],
+              "line-blur": ["case", ["==", ["get", "glowEffect"], 1], 6, 0],
+              "line-opacity": [
+                "case",
+                ["==", ["get", "glowEffect"], 1],
+                [
+                  "case",
+                  ["==", ["get", "borderStyle"], "none"],
+                  0,
+                  ["case", ["==", ["get", "strokeWeight"], 0], 0, 0.7],
+                ],
+                0,
+              ],
+            },
+          })
+
+          // Solid Outlines
+          map.addLayer({
+            id: "areas-outline-solid",
+            type: "line",
+            source: "areas-source",
+            filter: ["==", ["get", "borderStyle"], "solid"],
+            paint: {
+              "line-color": ["get", "borderColor"],
+              "line-width": ["get", "strokeWeight"],
+            },
+          })
+
+          // Dashed Outlines
+          map.addLayer({
+            id: "areas-outline-dashed",
+            type: "line",
+            source: "areas-source",
+            filter: ["==", ["get", "borderStyle"], "dashed"],
+            paint: {
+              "line-color": ["get", "borderColor"],
+              "line-width": ["get", "strokeWeight"],
+              "line-dasharray": [3, 3],
+            },
+          })
+
+          // Dotted Outlines
+          map.addLayer({
+            id: "areas-outline-dotted",
+            type: "line",
+            source: "areas-source",
+            filter: ["==", ["get", "borderStyle"], "dotted"],
+            paint: {
+              "line-color": ["get", "borderColor"],
+              "line-width": ["get", "strokeWeight"],
+              "line-dasharray": [1, 2],
             },
           })
 
@@ -706,7 +914,7 @@ export function UnifiedMap({
             type: "geojson",
             data: {
               type: "FeatureCollection",
-              features: routeFeatures as any,
+              features: routeFeatures as unknown as maplibregl.GeoJSONFeature[],
             },
           })
 
@@ -767,7 +975,7 @@ export function UnifiedMap({
             type: "geojson",
             data: {
               type: "FeatureCollection",
-              features: poiFeatures as any,
+              features: poiFeatures as unknown as maplibregl.GeoJSONFeature[],
             },
             cluster: true,
             clusterMaxZoom: 14,
@@ -1102,7 +1310,7 @@ export function UnifiedMap({
         }
 
         // Line or Polygon GeoJSON
-        let lineOrPolyGeoJson: any = null
+        let lineOrPolyGeoJson: Record<string, unknown> | null = null
 
         if (drawingMode === "add-route" && tempCoordinates.length > 1) {
           lineOrPolyGeoJson = {
@@ -1138,7 +1346,7 @@ export function UnifiedMap({
 
         map.addSource("draw-temp-source", {
           type: "geojson",
-          data: combinedData as any,
+          data: combinedData as unknown as maplibregl.GeoJSONSourceSpecification["data"],
         })
 
         // Add visual layers for drawing preview
@@ -1198,6 +1406,30 @@ export function UnifiedMap({
     <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border shadow-sm">
       {/* Map Target Element */}
       <div ref={containerRef} className="h-full w-full bg-slate-50" />
+
+      {/* Dynamic Basemap Filters Customization style */}
+      {basemapFilters && (
+        <style>{`
+          .leaflet-global-basemap-pane {
+            filter: grayscale(${basemapFilters.grayscale}%)
+                    invert(${basemapFilters.invert}%)
+                    hue-rotate(${basemapFilters.hueRotate}deg)
+                    brightness(${basemapFilters.brightness}%)
+                    contrast(${basemapFilters.contrast}%)
+                    saturate(${basemapFilters.saturation}%)
+                    sepia(${basemapFilters.sepia}%);
+          }
+          .maplibregl-canvas {
+            filter: grayscale(${basemapFilters.grayscale}%)
+                    invert(${basemapFilters.invert}%)
+                    hue-rotate(${basemapFilters.hueRotate}deg)
+                    brightness(${basemapFilters.brightness}%)
+                    contrast(${basemapFilters.contrast}%)
+                    saturate(${basemapFilters.saturation}%)
+                    sepia(${basemapFilters.sepia}%);
+          }
+        `}</style>
+      )}
 
       {/* Drawing Instructions Overlay */}
       {drawingMode !== "idle" && (
